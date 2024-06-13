@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>test</title>
+  </head>
+  <body>
+    input youtube live ID
+    <input
+      type="text"
+      id="input"
+      value="KAB3O9aEnGA"
+    />
+    <button id="button">Go</button>
+
+    <br/>
+
+
+    http://localhost:3000 開いてね
+
+    <br/>
+
+    ステータスとかいるか
+<script>
+      const electron = require("electron");
+      document.getElementById("button").addEventListener("click", () => {
+        const id = document.getElementById("input").value;
+        if (!id) return;
+        console.log(`input  ${id}`);
+        electron.ipcRenderer.send("setID", id);
+      });
+    </script>
+  </body>
+</html>
