@@ -1,27 +1,49 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain, ipcRenderer } from "electron";
 import * as path from "path";
 import express from "express";
 import { LiveChat } from "youtube-chat";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 let mainWindow: BrowserWindow;
 
-const list: string[] = [];
+let socket: any = null;
+
+const exapp = express();
+const httpServer = createServer(exapp);
+const io = new Server(httpServer, { path: "/socket/" });
+
+io.on("connect", (s) => {
+  socket = s;
+  console.log("server connected");
+});
+
+io.on("disconnect", () => (socket = null));
+
+exapp.get("/", (req, res) => {
+  console.log("root");
+  res.sendFile(path.join(__dirname, "../display.html"));
+});
 
 async function start(liveId: string) {
+  mainWindow.webContents.send("status", "do");
   const liveChat = new LiveChat({ liveId });
-  const ok = await liveChat.start();
 
   liveChat.on("start", (liveId) => {
     console.log(liveId);
+    mainWindow.webContents.send("status", "start live");
   });
 
   liveChat.on("chat", (chatItem) => {
+    console.log(chatItem);
+    if (!socket) return;
     for (const mm of chatItem.message) {
-      const t = (mm as any).text;
-      if (list.length > 100) list.length = 100;
-      list.unshift(t);
+      socket.emit("chat", mm);
+      mainWindow.webContents.send("status", JSON.stringify(mm));
     }
   });
+
+  await liveChat.start();
 }
 
 function createWindow() {
@@ -46,15 +68,7 @@ function createWindow() {
     mainWindow = null!;
   });
 
-  const app = express();
-  app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "../display.html"));
-  });
-  app.get("/data", (req, res) => {
-    res.json(list);
-  });
-
-  app.listen(3000);
+  httpServer.listen(3000);
 }
 
 app.on("ready", createWindow);

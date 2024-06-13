@@ -20,7 +20,7 @@
 
     <br/>
 
-    ステータスとかいるか
+    <pre id="status"></pre>
 <script>
       const electron = require("electron");
       document.getElementById("button").addEventListener("click", () => {
@@ -29,6 +29,10 @@
         console.log(`input  ${id}`);
         electron.ipcRenderer.send("setID", id);
       });
+
+      electron.ipcRenderer.on("status",async (event,arg)=>{
+        document.getElementById("status").innerText = arg
+      })
     </script>
   </body>
 </html>
